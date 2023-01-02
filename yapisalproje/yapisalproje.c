@@ -1,14 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <conio.h>
 #include <time.h>
 
-#define KITAPLARCSV "/home/turabi/Desktop/yapisalproje/kitaplar.csv"
-#define OGRENCILERCSV "/home/turabi/Desktop/yapisalproje/ogrenciler.csv"
-#define KITAPODUNCCSV "/home/turabi/Desktop/yapisalproje/kitapodunc.csv"
-#define KITAPYAZARCSV "/home/turabi/Desktop/yapisalproje/kitapyazar.csv"
-#define YAZARLARCSV "/home/turabi/Desktop/yapisalproje/yazarlar.csv"
-#define KITAPORNEKCSV "/home/turabi/Desktop/yapisalproje/kitapornek.csv"
+#define KITAPLARCSV "kitaplar.csv"
+#define OGRENCILERCSV "ogrenciler.csv"
+#define KITAPODUNCCSV "kitapodunc.csv"
+#define KITAPYAZARCSV "kitapyazar.csv"
+#define YAZARLARCSV "yazarlar.csv"
+#define KITAPORNEKCSV "kitapornek.csv"
 typedef struct Yazar {
     int yazarID;
     char yazarAd[30];
@@ -89,11 +90,47 @@ int savekitaplaroku(KITAP** headptr){
     fclose(kitap);
     fclose(kitapornek);
 }
+KITAP* kitapbultekbilgi(KITAP** headptr, char bilgi[30],KITAP* (*fncptr)(KITAP*,char[30])){
+	KITAP *temp;
+    temp = *headptr;
+    KITAP *sonuc = (*fncptr)(temp,bilgi);
+    return sonuc;
+}
+
+KITAP* isbnilebul(KITAP* temp, char ISBN[13]){
+	while (temp != NULL) {
+        if(strcmp(temp->ISBN,ISBN) == 0){
+            return temp;
+        }
+        temp = temp->next;
+    }
+    return NULL;
+}
+KITAP* isimlebul(KITAP* temp,char kitapAdi[30]){
+	while (temp != NULL) {
+        if(strcmp(temp->kitapAdi,kitapAdi) == 0){
+            return temp;
+        }
+        temp = temp->next;
+    }
+    return NULL;
+}
 KITAP* kitapbul(KITAP** headptr, char ISBN[13]){
     KITAP *temp;
     temp = *headptr;
     while (temp != NULL) {
         if(strcmp(temp->ISBN,ISBN) == 0){
+            return temp;
+        }
+        temp = temp->next;
+    }
+    return NULL;
+}
+KITAP* kitapbulisimle(KITAP** headptr, char kitapAdi[30]){
+    KITAP *temp;
+    temp = *headptr;
+    while (temp != NULL) {
+        if(strcmp(temp->kitapAdi,kitapAdi) == 0){
             return temp;
         }
         temp = temp->next;
@@ -109,7 +146,8 @@ void kitapekle(KITAP** headptr){
     KITAP *temp2 = *headptr;
     char kitapID[14] = "0000000000000\0";
     int i=0,j;
-    while (kitapbul(headptr,kitapID) != NULL) {
+    KITAP* (*isbnbul)(KITAP*,char[30]) = &isbnilebul;
+    while (kitapbultekbilgi(headptr,kitapID,isbnbul) != NULL) {
         temp2 = temp2->next;
         kitapID[i]++;
         for (j = 0; j < 13; j++) {
@@ -139,31 +177,62 @@ void kitapekle(KITAP** headptr){
         temp->head = kor;
         fprintf(kitapornek,"%s,%s\n",kor->EtiketNo,kor->Durum);
     }
+    printf("Eklenen Kitap\nKitap Adi:%s\nKitap ISBN:%s\nKitap Adeti:%d\n",temp->kitapAdi,temp->ISBN,temp->adet);
     fprintf(kitapornek,"\n");
     fprintf(kitap,"%s,%s,%d\n",temp->kitapAdi,temp->ISBN,temp->adet);
     fclose(kitap);
     fclose(kitapornek);
 }
 void kitapgoruntule(KITAP** headptr){
-    char ISBN[13];
-    int i;
-    printf("ISBN: ");
-    scanf("%s",ISBN);
-    KITAP* temp = kitapbul(headptr,ISBN);
-    KORNEK* temp2;
-    if(temp != NULL){
-        printf("Kitap adi = %s\nKitap kodu = %s\nBulunan Adet = %d\n", temp->kitapAdi, temp->ISBN, temp->adet);
-        temp2 = temp->head;
-        for(i=0;i<temp->adet;i++){
-            printf("%d. Kopya = \n",i+1);
-
-            printf("Etiket No = %s,Durum = %s\n",temp2->EtiketNo,temp2->Durum);
-            temp2 = temp2->next;
-        }
-    }
-    else{
-        printf("Kitap Bulunamadi\n");
-    }
+	int secim;
+	printf("ISBN ile bulmak icin 1 yaziniz\nKitap Adi ile bulmak icin 2 yaziniz\n");
+	scanf("%d",&secim);
+	system("cls");
+	if(secim==1){
+		char ISBN[13];
+	    int i;
+	    printf("ISBN: ");
+	    scanf("%s",ISBN);
+	    KITAP* (*isbnbul)(KITAP*,char[30]) = &isbnilebul;
+    	KITAP* temp = kitapbultekbilgi(headptr,ISBN,isbnbul);
+	    KORNEK* temp2;
+	    if(temp != NULL){
+	        printf("Kitap adi = %s\nKitap kodu = %s\nBulunan Adet = %d\n", temp->kitapAdi, temp->ISBN, temp->adet);
+	        temp2 = temp->head;
+	        for(i=0;i<temp->adet;i++){
+	            printf("%d. Kopya = \n",i+1);
+	
+	            printf("Etiket No = %s,Durum = %s\n",temp2->EtiketNo,temp2->Durum);
+	            temp2 = temp2->next;
+	        }
+	    }
+	    else{
+	        printf("Kitap Bulunamadi\n");
+	    }
+	}
+	else{
+		char kitapad[13];
+	    int i;
+	    printf("Kitabin adi: ");
+	    scanf("%s",kitapad);
+	    KITAP* (*adlabul)(KITAP*,char[30]) = &isimlebul;
+    	KITAP* temp = kitapbultekbilgi(headptr,kitapad,adlabul);
+	    KORNEK* temp2;
+	    if(temp != NULL){
+	        printf("Kitap adi = %s\nKitap kodu = %s\nBulunan Adet = %d\n", temp->kitapAdi, temp->ISBN, temp->adet);
+	        temp2 = temp->head;
+	        for(i=0;i<temp->adet;i++){
+	            printf("%d. Kopya = \n",i+1);
+	
+	            printf("Etiket No = %s,Durum = %s\n",temp2->EtiketNo,temp2->Durum);
+	            temp2 = temp2->next;
+	        }
+	    }
+	    else{
+	        printf("Kitap Bulunamadi\n");
+	    }
+	}
+    
 }
 void kitaplardosyayayaz(KITAP* headptr){
     FILE *kitap = fopen(KITAPLARCSV, "w");
@@ -188,13 +257,15 @@ void kitaplardosyayayaz(KITAP* headptr){
 }
 void kitapsil(KITAP** headptr){
     char kitapISBN[14];
-    printf("KITAP ID: ");
+    printf("KITAP ISBN: ");
     scanf("%s",kitapISBN);
     KITAP *temp;
     temp = *headptr;
+    KITAP *temp2;
     int kitapbulundu=0;
     if(strcmp(temp->ISBN,kitapISBN) == 0){
         *headptr = temp->next;
+        printf("Silinen Kitap\nKitap Adi:%s\nKitap ISBN:%s\nKitap Adeti:%d\n",temp->kitapAdi,temp->ISBN,temp->adet);
         free(temp);
         kitaplardosyayayaz(*headptr);
         kitapbulundu = 1;
@@ -202,8 +273,10 @@ void kitapsil(KITAP** headptr){
     else{
         while (temp->next != NULL) {
             if(strcmp(temp->next->ISBN,kitapISBN) == 0){
+            	temp2 = temp->next;
                 temp->next = temp->next->next;
-                free(temp->next);
+                printf("Silinen Kitap\nKitap Adi:%s\nKitap ISBN:%s\nKitap Adeti:%d\n",temp2->kitapAdi,temp2->ISBN,temp2->adet);
+                free(temp2);
                 kitaplardosyayayaz(*headptr);
                 kitapbulundu = 1;
                 break;
@@ -233,9 +306,10 @@ void kitaplaryazdir(KITAP* headptr) {
 void kitapGuncelle(KITAP** headptr){
     int i;
     char kitapISBN[13];
-    printf("KitapID ISBN: ");
+    printf("Kitap ISBN: ");
     scanf("%s",kitapISBN);
-    KITAP *temp = kitapbul(headptr,kitapISBN);
+    KITAP* (*isbnbul)(KITAP*,char[30]) = &isbnilebul;
+    KITAP* temp = kitapbultekbilgi(headptr,kitapISBN,isbnbul);
     if(temp != NULL){
         printf("Kitap adi: ");
         scanf("%s",temp->kitapAdi);
@@ -254,6 +328,7 @@ void kitapGuncelle(KITAP** headptr){
             temp->head = kor;
         }
         kitaplardosyayayaz(*headptr);
+        printf("Guncellenen Kitap\nKitap Adi:%s\nKitap ISBN:%s\nKitap Adeti:%d\n",temp->kitapAdi,temp->ISBN,temp->adet);
     }
     else{
         printf("Kitap bulunamadi\n");
@@ -270,6 +345,8 @@ int saveogrencileroku(OGRENCI** headptr){
         OGRENCI *temp;
         temp = (OGRENCI*)malloc(sizeof(OGRENCI));
         fscanf(ogrenci,"%[^,],%[^,],%[^,],%d\n",temp->ad,temp->soyad,temp->ogrID,&(temp->puan));
+        OGRENCI *temp3 = *headptr;
+        temp3->prev = temp;
         temp->next = *headptr;
         *headptr = temp;
     }
@@ -288,6 +365,17 @@ OGRENCI* ogrencibul(OGRENCI** headptr, char ogrID[9]){
     temp = *headptr;
     while (temp != NULL) {
         if(strcmp(temp->ogrID,ogrID) == 0){
+            return temp;
+        }
+        temp = temp->next;
+    }
+    return NULL;
+}
+OGRENCI* ogrencibulisimle(OGRENCI** headptr, char ad[30],char soyad[30]){
+    OGRENCI *temp;
+    temp = *headptr;
+    while (temp != NULL) {
+        if(strcmp(temp->ad,ad) == 0 && strcmp(temp->soyad,soyad)==0){
             return temp;
         }
         temp = temp->next;
@@ -325,6 +413,7 @@ void ogrenciekle(OGRENCI** headptr){
 
     fprintf(ogrenci,"%s,%s,%s,%d\n",temp->ad,temp->soyad,temp->ogrID,temp->puan);
     fclose(ogrenci);
+    printf("Ogrenci eklendi\nOgrenci ismi=%s\nOgrenci Soyismi=%s\nOgrenci ID=%s\nOgrenci Puan=%d\n",temp->ad,temp->soyad,temp->ogrID,temp->puan);
 }
 void ogrencilerdosyayayaz(OGRENCI* headptr){
     FILE *ogrenci = fopen(OGRENCILERCSV, "w");
@@ -352,6 +441,7 @@ void ogrencisil(OGRENCI** headptr){
         else{
             *headptr = temp->next;
         }
+        printf("Ogrenci silindi\nOgrenci ismi=%s\nOgrenci Soyismi=%s\nOgrenci ID=%s\nOgrenci Puan=%d\n",temp->ad,temp->soyad,temp->ogrID,temp->puan);
         free(temp);
         ogrencilerdosyayayaz(*headptr);
     }
@@ -373,6 +463,7 @@ void ogrenciGuncelle(OGRENCI** headptr){
         scanf("%s",temp->ogrID);
         printf("Puan: ");
         scanf("%d",&temp->puan);
+        printf("Ogrenci guncellendi\nOgrenci ismi=%s\nOgrenci Soyismi=%s\nOgrenci ID=%s\nOgrenci Puan=%d\n",temp->ad,temp->soyad,temp->ogrID,temp->puan);
         ogrencilerdosyayayaz(*headptr);
     }
     else{
@@ -383,7 +474,7 @@ void cezaliogrencilistele(OGRENCI** headptr){
     OGRENCI *temp;
     temp = *headptr;
     while (temp != NULL) {
-        if(temp->puan < 0){
+        if(temp->puan < 100){
             printf("Ogrenci Adi = %s\nOgrenci Soyadi = %s\nOgrenci Id = %s\nOgrenci Puani = %d\n", temp->ad, temp->soyad, temp->ogrID, temp->puan);
         }
         temp = temp->next;
@@ -395,6 +486,17 @@ YAZAR * yazarbul(YAZAR** headptr, int yazarID){
     temp = *headptr;
     while (temp != NULL) {
         if(yazarID == temp->yazarID){
+            return temp;
+        }
+        temp = temp->next;
+    }
+    return NULL;
+}
+YAZAR * yazarbulisimle(YAZAR** headptr, char yazarAd[30]){
+    YAZAR *temp;
+    temp = *headptr;
+    while (temp != NULL) {
+        if(strcmp(yazarAd,temp->yazarAd)==0){
             return temp;
         }
         temp = temp->next;
@@ -419,7 +521,8 @@ void yazarekle(YAZAR** headptr){
 
     temp->next = *headptr;
     *headptr = temp;
-
+    
+    printf("Yazar eklendi\nYazar adi:%s\nYazar soyadi:%s\nYazar ID:%d\n",temp->yazarAd,temp->yazarSoyad,temp->yazarID);
     fprintf(yazar,"%s,%s,%d\n",temp->yazarAd,temp->yazarSoyad,temp->yazarID);
     fclose(yazar);
 }
@@ -467,6 +570,7 @@ void yazarGuncelle(YAZAR** headptr){
         scanf("%s",temp->yazarAd);
         printf("Yazar Soyad: ");
         scanf("%s",temp->yazarSoyad);
+        printf("Yazar guncellendi\nYazar adi:%s\nYazar soyadi:%s\nYazar ID:%d\n",temp->yazarAd,temp->yazarSoyad,temp->yazarID);
         yazarlardosyayayaz(*headptr);
     }
     else{
@@ -475,15 +579,18 @@ void yazarGuncelle(YAZAR** headptr){
 }
 
 int kitapyazareslestir(YAZAR** yheadptr, KITAP** kheadptr, KYAZAR arr[]){
-    FILE *kitapyazar = fopen(KITAPYAZARCSV, "r+");
+    printf("Kitap yazar eslesmeleri yalnizca sahip olunan numaralarla yapilmaktadir.\n");
+	FILE *kitapyazar = fopen(KITAPYAZARCSV, "r+");
     fseek(kitapyazar, 0, SEEK_END);
     KYAZAR *temp= (KYAZAR*)malloc(sizeof(KYAZAR));
     int yazarNo,i=0;
     char kitapISBN[13];
     printf("Yazar no: ");
     scanf("%d",&yazarNo);
-
-    if(yazarbul(yheadptr,yazarNo)!=NULL){
+    YAZAR *ytemp = yazarbul(yheadptr,yazarNo);
+    
+    if(ytemp!=NULL){
+    	printf("Yazar Adi = %s\nYazar Soyadi = %s\nYazar Id = %d\n", ytemp->yazarAd, ytemp->yazarSoyad, ytemp->yazarID);
         temp->YazarID = yazarNo;
     }
     else{
@@ -492,7 +599,10 @@ int kitapyazareslestir(YAZAR** yheadptr, KITAP** kheadptr, KYAZAR arr[]){
     }
     printf("Kitap ISBN: ");
     scanf("%s",kitapISBN);
-    if(kitapbul(kheadptr,kitapISBN)!=NULL){
+    KITAP* (*isbnbul)(KITAP*,char[30]) = &isbnilebul;
+    KITAP* ktemp = kitapbultekbilgi(kheadptr,kitapISBN,isbnbul);
+    if(ktemp!=NULL){
+    	printf("Kitap adi = %s\nKitap kodu = %s\nBulunan Adet = %d\n", ktemp->kitapAdi, ktemp->ISBN, ktemp->adet);
         strcpy(temp->ISBN,kitapISBN);
     }
     else{
@@ -501,11 +611,13 @@ int kitapyazareslestir(YAZAR** yheadptr, KITAP** kheadptr, KYAZAR arr[]){
     }
     fprintf(kitapyazar,"%s,%d\n",temp->ISBN,temp->YazarID);
     fclose(kitapyazar);
-    while(arr[i].YazarID != -1){
+    printf("Eslestirme tamamlandi");
+    while(arr[i].YazarID != -2){
         i++;
     }
     arr[i].YazarID = temp->YazarID;
     strcpy(arr[i].ISBN,temp->ISBN);
+    arr[i+1].YazarID = -2;
 }
 int saveeslesmeleroku(KYAZAR arr[]){
     FILE* kitapyazar = fopen(KITAPYAZARCSV, "r+");
@@ -517,33 +629,45 @@ int saveeslesmeleroku(KYAZAR arr[]){
     int i=0;
     while(!feof(kitapyazar)){
         fscanf(kitapyazar,"%[^,],%d\n",arr[i].ISBN,&(arr[i].YazarID));
-        arr[i+1].YazarID = -1;
+        arr[i+1].YazarID = -2;
         i++;
     }
 }
 void kyazarlaryazdir(KYAZAR arr[]){
     FILE* kitapyazar = fopen(KITAPYAZARCSV, "w");
     int i=0;
-    while(arr[i].YazarID != -1){
+    while(arr[i].YazarID != -2){
         fprintf(kitapyazar,"%s,%d\n",arr[i].ISBN,arr[i].YazarID);
         i++;
     }
     fclose(kitapyazar);
 }
 int kyazarguncelle(YAZAR** yheadptr, KITAP** kheadptr,KYAZAR arr[]){
+	int eslesmebulundu = 0;
+	KITAP* (*isbnbul)(KITAP*,char[30]) = &isbnilebul;
+	printf("Kitap yazar eslesmeleri yalnizca sahip olunan numaralarla yapilmaktadir.\n");
     int yazarNo;
     char kitapISBN[13];
     printf("Yazar no: ");
     scanf("%d",&yazarNo);
+    
     printf("Kitap ISBN: ");
     scanf("%s",kitapISBN);
+    
     int i=0;
-    while(arr[i].YazarID != -1){
+    while(arr[i].YazarID != -2){
         if(arr[i].YazarID == yazarNo && strcmp(arr[i].ISBN,kitapISBN) == 0){
-            printf("Yazar no: ");
+        	KITAP *ktemp = kitapbultekbilgi(kheadptr,kitapISBN,isbnbul);
+    		printf("Kitap adi = %s\nKitap kodu = %s\nBulunan Adet = %d\n", ktemp->kitapAdi, ktemp->ISBN, ktemp->adet);
+    		YAZAR *ytemp = yazarbul(yheadptr,yazarNo);
+    		printf("Yazar Adi = %s\nYazar Soyadi = %s\nYazar Id = %d\n", ytemp->yazarAd, ytemp->yazarSoyad, ytemp->yazarID);
+            printf("Yeni yazar no: ");
             scanf("%d",&yazarNo);
             if(yazarbul(yheadptr,yazarNo)!=NULL){
                 arr[i].YazarID = yazarNo;
+                printf("Yeni yazar bilgileri\n");
+                ytemp = yazarbul(yheadptr,yazarNo);
+    			printf("Yazar Adi = %s\nYazar Soyadi = %s\nYazar Id = %d\n", ytemp->yazarAd, ytemp->yazarSoyad, ytemp->yazarID);
             }
             else{
                 printf("Yazar bulunamadi\n");
@@ -551,7 +675,11 @@ int kyazarguncelle(YAZAR** yheadptr, KITAP** kheadptr,KYAZAR arr[]){
             }
             printf("Kitap ISBN: ");
             scanf("%s",kitapISBN);
-            if(kitapbul(kheadptr,kitapISBN)!=NULL){
+            if(kitapbultekbilgi(kheadptr,kitapISBN,isbnbul)!=NULL){
+            	printf("Yeni kitap bilgileri\n");
+            	
+    	        ktemp = kitapbultekbilgi(kheadptr,kitapISBN,isbnbul);
+    			printf("Kitap adi = %s\nKitap kodu = %s\nBulunan Adet = %d\n", ktemp->kitapAdi, ktemp->ISBN, ktemp->adet);
                 strcpy(arr[i].ISBN,kitapISBN);
             }
             else{
@@ -559,13 +687,15 @@ int kyazarguncelle(YAZAR** yheadptr, KITAP** kheadptr,KYAZAR arr[]){
                 return -1;
             }
             kyazarlaryazdir(arr);
+            printf("Kitap yazar degisimi tamamlandi\n");
+            eslesmebulundu = 1;
             return 1;
-        }
-        else{
-            printf("Eslesme bulunamadi\n");
         }
         i++;
     }
+    if(eslesmebulundu==0){
+    	printf("Eslesme bulunamadi");
+	}
     return -1;
 }
 
@@ -575,9 +705,11 @@ void yazarsil(YAZAR** headptr, KYAZAR arr[]){
     scanf("%d",&yazarID);
     YAZAR *temp;
     temp = *headptr;
+    YAZAR *temp2;
     int yazarbulundu=0;
     if(yazarID == temp->yazarID){
         *headptr = temp->next;
+        printf("Yazar silindi\nYazar adi:%s\nYazar soyadi:%s\nYazar ID:%d\n",temp->yazarAd,temp->yazarSoyad,temp->yazarID);
         free(temp);
         yazarlardosyayayaz(*headptr);
         yazarbulundu = 1;
@@ -585,8 +717,11 @@ void yazarsil(YAZAR** headptr, KYAZAR arr[]){
     else{
         while (temp->next != NULL) {
             if(temp->next->yazarID == yazarID){
+            	
+            	temp2 = temp->next;
                 temp->next = temp->next->next;
-                free(temp->next);
+                printf("Yazar silindi\nYazar adi:%s\nYazar soyadi:%s\nYazar ID:%d\n",temp2->yazarAd,temp2->yazarSoyad,temp2->yazarID);
+                free(temp2);
                 yazarlardosyayayaz(*headptr);
                 yazarbulundu = 1;
                 break;
@@ -599,10 +734,9 @@ void yazarsil(YAZAR** headptr, KYAZAR arr[]){
     }
     else{
         int i=0;
-        while(arr[i].YazarID != -1){
+        while(arr[i].YazarID != -2){
             if(arr[i].YazarID == yazarID){
                 arr[i].YazarID = -1;
-                strcpy(arr[i].ISBN,"");
             }
             i++;
         }
@@ -610,8 +744,49 @@ void yazarsil(YAZAR** headptr, KYAZAR arr[]){
     }
 }
 
+KODUNCLISTE* ogrNobul(KODUNCLISTE* temp,KODUNCLISTE* depotemp,int sifirbulundu,char ogrNo[8]){
+	while(temp != NULL){
+        if(strcmp(temp->odunc->ogrID,ogrNo) == 0){
+            sifirbulundu++;
+            depotemp = temp;
+        }
+        if(strcmp(temp->odunc->ogrID,ogrNo) == 0 && temp->odunc->islemTipi == 1){
+            sifirbulundu--;
+        }
 
+        temp = temp->next;
+    }
+    if(sifirbulundu > 0){
+        return depotemp;
+    }
+    else{
+        return NULL;
+    }
+}
+KODUNCLISTE* kitapISBNbul(KODUNCLISTE* temp,KODUNCLISTE* depotemp,int sifirbulundu,char kitapISBN[20]){
+	while(temp != NULL){
+        if(strcmp(temp->odunc->EtiketNo,kitapISBN) == 0){
+        	
+            sifirbulundu = !sifirbulundu;
+            depotemp = temp;
+        }
 
+        temp = temp->next;
+    }
+    if(sifirbulundu == 1){
+        return depotemp;
+    }
+    else{
+        return NULL;
+    }
+}
+KODUNCLISTE* depodabultekbilgi(KODUNCLISTE** headptr, char bilgi[], KODUNCLISTE* (*fncptr)(KODUNCLISTE*,KODUNCLISTE*,int,char[20])){
+	KODUNCLISTE *temp = *headptr;
+    KODUNCLISTE *depotemp = NULL;
+    int sifirbulundu=0;
+    KODUNCLISTE *returnvalue = (*fncptr)(temp,depotemp,sifirbulundu,bilgi);
+    return returnvalue;
+}
 KODUNCLISTE* depodabul(KODUNCLISTE** headptr, char ogrNo[8], char kitapISBN[20]){
     KODUNCLISTE *temp = *headptr;
     KODUNCLISTE *depotemp = NULL;
@@ -630,47 +805,6 @@ KODUNCLISTE* depodabul(KODUNCLISTE** headptr, char ogrNo[8], char kitapISBN[20])
         return NULL;
     }
 }
-KODUNCLISTE* depodabulkitapla(KODUNCLISTE** headptr, char kitapISBN[20]){
-    KODUNCLISTE *temp = *headptr;
-    KODUNCLISTE *depotemp = NULL;
-    int sifirbulundu=0;
-    while(temp != NULL){
-        if(strcmp(temp->odunc->EtiketNo,kitapISBN) == 0){
-            sifirbulundu = !sifirbulundu;
-            depotemp = temp;
-        }
-
-        temp = temp->next;
-    }
-    if(sifirbulundu == 1){
-        return depotemp;
-    }
-    else{
-        return NULL;
-    }
-}
-KODUNCLISTE* depodabulogrencino(KODUNCLISTE** headptr, char ogrNo[20]){
-    KODUNCLISTE *temp = *headptr;
-    KODUNCLISTE *depotemp = NULL;
-    int sifirbulundu=0;
-    while(temp != NULL){
-        if(strcmp(temp->odunc->ogrID,ogrNo) == 0){
-            sifirbulundu++;
-            depotemp = temp;
-        }
-        if(strcmp(temp->odunc->ogrID,ogrNo) == 0 && temp->odunc->islemTipi == 1){
-            sifirbulundu--;
-        }
-
-        temp = temp->next;
-    }
-    if(sifirbulundu > 0){
-        return depotemp;
-    }
-    else{
-        return NULL;
-    }
-}
 int oduncal(OGRENCI *ohead,KITAP *khead,KODUNCLISTE** kodhead){
     FILE *oduncfile = fopen(KITAPODUNCCSV,"r+");
     fseek(oduncfile,0,SEEK_END);
@@ -679,16 +813,18 @@ int oduncal(OGRENCI *ohead,KITAP *khead,KODUNCLISTE** kodhead){
     printf("Ogrenci no: ");
     scanf("%s",ogrNo);
     OGRENCI *otemp = ogrencibul(&ohead,ogrNo);
-    if(otemp->puan<0){
-        printf("Ogrenci puani eksik\n");
-        return -1;
-    }
+    
     char kitapISBN[13];
     printf("Kitap ISBN: ");
     scanf("%s",kitapISBN);
-    KITAP *ktemp = kitapbul(&khead,kitapISBN);
+    KITAP* (*isbnbul)(KITAP*,char[30]) = &isbnilebul;
+    KITAP* ktemp = kitapbultekbilgi(&khead,kitapISBN,isbnbul);
     KORNEK *ktemp2;
     if(otemp != NULL && ktemp != NULL){
+    	if(otemp->puan<0){
+        	printf("Ogrenci puani eksik\n");
+        	return -1;
+    	}
         KODUNCLISTE *temp = (KODUNCLISTE*)malloc(sizeof(KODUNCLISTE));
         KODUNC *kodunc = (KODUNC*)malloc(sizeof(KODUNC));
         TARIH *tarih = (TARIH*)malloc(sizeof(TARIH));
@@ -725,9 +861,9 @@ int oduncal(OGRENCI *ohead,KITAP *khead,KODUNCLISTE** kodhead){
             EtiketNo[13] = '_';
             EtiketNo[14] = i+48;
             EtiketNo[15] = '\0';
-            if(depodabulkitapla(kodhead,EtiketNo) == NULL){
+            KODUNCLISTE* (*kitapbul)(KODUNCLISTE*,KODUNCLISTE*,int,char[20]) = &kitapISBNbul;
+            if(depodabultekbilgi(kodhead,EtiketNo,kitapISBNbul) == NULL){
                 strcpy(kodunc->EtiketNo,EtiketNo);
-
                 kitapfound = 1;
                 bulunankitapsirasi = i;
             }
@@ -745,6 +881,7 @@ int oduncal(OGRENCI *ohead,KITAP *khead,KODUNCLISTE** kodhead){
         temp->next = *kodhead;
         kitaplardosyayayaz(khead);
         *kodhead = temp;
+        printf("Odunc alinan kitap etiketi: %s\nOdunc alan ogrenci ID:%s\nOdunc alinan tarih:%d.%d.%d\n",kodunc->EtiketNo,kodunc->ogrID,kodunc->islemTarihi.gun & 0b00011111,kodunc->islemTarihi.ay & 0b0001111,kodunc->islemTarihi.yil);
         fprintf(oduncfile,"%s,%s,%d,%d.%d.%d\n",kodunc->EtiketNo,kodunc->ogrID,kodunc->islemTipi,kodunc->islemTarihi.gun & 0b00011111,kodunc->islemTarihi.ay & 0b0001111,kodunc->islemTarihi.yil);
         fclose(oduncfile);
     }
@@ -764,7 +901,8 @@ int oduncver(OGRENCI *ohead,KITAP *khead,KODUNCLISTE** kodhead){
     char kitapISBN[13];
     printf("Kitap ISBN: ");
     scanf("%s",kitapISBN);
-    KITAP *ktemp = kitapbul(&khead,kitapISBN);
+    KITAP* (*isbnbul)(KITAP*,char[30]) = &isbnilebul;
+    KITAP* ktemp = kitapbultekbilgi(&khead,kitapISBN,isbnbul);
     KORNEK *ktemp2;
     if(otemp != NULL && ktemp != NULL){
         KODUNCLISTE *temp = (KODUNCLISTE*)malloc(sizeof(KODUNCLISTE));
@@ -803,7 +941,8 @@ int oduncver(OGRENCI *ohead,KITAP *khead,KODUNCLISTE** kodhead){
             EtiketNo[13] = '_';
             EtiketNo[14] = i+48;
             EtiketNo[15] = '\0';
-            if(depodabulkitapla(kodhead,EtiketNo) != NULL){
+            KODUNCLISTE* (*kitapbul)(KODUNCLISTE*,KODUNCLISTE*,int,char[20]) = &kitapISBNbul;
+            if(depodabultekbilgi(kodhead,EtiketNo,kitapISBNbul) != NULL){
                 strcpy(kodunc->EtiketNo,EtiketNo);
                 kitapfound = 1;
                 bulunankitapsirasi = i;
@@ -822,6 +961,7 @@ int oduncver(OGRENCI *ohead,KITAP *khead,KODUNCLISTE** kodhead){
         temp->next = *kodhead;
         kitaplardosyayayaz(khead);
         *kodhead = temp;
+        printf("Teslim edilen etiketi: %s\nTeslim eden ogrenci ID:%s\nTeslim edilen tarih:%d.%d.%d\n",kodunc->EtiketNo,kodunc->ogrID,kodunc->islemTarihi.gun & 0b00011111,kodunc->islemTarihi.ay & 0b0001111,kodunc->islemTarihi.yil);
         fprintf(oduncfile,"%s,%s,%d,%d.%d.%d\n",kodunc->EtiketNo,kodunc->ogrID,kodunc->islemTipi & 0b00000001,kodunc->islemTarihi.gun & 0b00011111,kodunc->islemTarihi.ay & 0b0001111,kodunc->islemTarihi.yil);
         fclose(oduncfile);
     }
@@ -866,7 +1006,8 @@ void kitapteslimetmeyenler(KODUNCLISTE** headptr,OGRENCI *ohead){
     OGRENCI *temp;
     temp = ohead;
     while (temp != NULL) {
-        if(depodabulogrencino(headptr,temp->ogrID) != NULL){
+    	KODUNCLISTE* (*kitapbul)(KODUNCLISTE*,KODUNCLISTE*,int,char[20]) = &ogrNobul;
+        if(depodabultekbilgi(headptr,temp->ogrID,ogrNobul) != NULL){
             printf("Ogrenci Adi = %s\nOgrenci Soyadi = %s\nOgrenci Id = %s\nOgrenci Puani = %d\n", temp->ad, temp->soyad, temp->ogrID, temp->puan);
         }
         temp = temp->next;
@@ -881,9 +1022,10 @@ void raftakiKitaplar(KODUNCLISTE** headptr,KITAP *khead){
         temp2 = temp->head;
         for(i=0;i<temp->adet;i++){
             char EtiketNo[20];
-            ;
-            if(depodabulkitapla(headptr,temp2->EtiketNo) == NULL){
-                printf("Kitap Adi = %s\nISBN = %s\nAdet = %d\n", temp->kitapAdi, temp->ISBN, temp->adet);
+            strcpy(EtiketNo,temp2->EtiketNo);
+            KODUNCLISTE* (*kitapbul)(KODUNCLISTE*,KODUNCLISTE*,int,char[20]) = &kitapISBNbul;
+            if(depodabultekbilgi(headptr,EtiketNo,kitapISBNbul) == NULL){
+                printf("Kitap Adi = %s\nEtiket No = %s\nAdet = %d\n", temp->kitapAdi, temp2->EtiketNo, temp->adet);
             }
             temp2 = temp2->next;
         }
@@ -969,73 +1111,144 @@ void cezalariver(KODUNCLISTE** headptr,OGRENCI **ohead){
         }
         depotemp = depotemp->next;
     }
-
-
     ogrencilerdosyayayaz(*ohead);
 }
 void yazarGoruntule(YAZAR *yhead,KITAP *khead, KYAZAR *kyazarlar) {
-    YAZAR *temp;
-    int yazarId;
-    int i=0;
-    printf("Yazar ID giriniz: ");
-    scanf("%d",&yazarId);
-    temp = yazarbul(&yhead,yazarId);
-    if(temp == NULL){
-        printf("Yazar bulunamadi\n");
-    }
-    else{
-        printf("Yazar Adi = %s\nYazar Soyadi = %s\nYazar Id = %d\n", temp->yazarAd, temp->yazarSoyad, temp->yazarID);
-    }
-    while(kyazarlar[i].YazarID != -1){
-        if(kyazarlar[i].YazarID == yazarId){
-            KITAP* kitap = kitapbul(&khead,kyazarlar[i].ISBN);
-            printf("Kitap Adi = %s\nKitap ISBN = %s\n", kitap->kitapAdi, kitap->ISBN);
-        }
-        i++;
-    }
+	int secim;
+	printf("Id ile bulmak icin 1\nIsim ile bulmak icin 2 yaziniz\n");
+	scanf("%d",&secim);
+	system("cls");
+	if(secim==1){
+		YAZAR *temp;
+	    int yazarId;
+	    int i=0;
+	    printf("Yazar ID giriniz: ");
+	    scanf("%d",&yazarId);
+	    temp = yazarbul(&yhead,yazarId);
+	    if(temp == NULL){
+	        printf("Yazar bulunamadi\n");
+	    }
+	    else{
+	        printf("Yazar Adi = %s\nYazar Soyadi = %s\nYazar Id = %d\n", temp->yazarAd, temp->yazarSoyad, temp->yazarID);
+	    }
+	    while(kyazarlar[i].YazarID != -2){
+	        if(kyazarlar[i].YazarID == yazarId){
+	        	KITAP* (*isbnbul)(KITAP*,char[30]) = &isbnilebul;
+    	        KITAP* kitap = kitapbultekbilgi(&khead,kyazarlar[i].ISBN,isbnbul);
+	            printf("Kitap Adi = %s\nKitap ISBN = %s\n", kitap->kitapAdi, kitap->ISBN);
+	        }
+	        i++;
+	    }
+	}
+	else{
+		YAZAR *temp;
+	    char yazarAd[30];
+	    int i=0;
+	    printf("Yazar Adini giriniz: ");
+	    scanf("%s",yazarAd);
+	    temp = yazarbulisimle(&yhead,yazarAd);
+	    if(temp == NULL){
+	        printf("Yazar bulunamadi\n");
+	    }
+	    else{
+	        printf("Yazar Adi = %s\nYazar Soyadi = %s\nYazar Id = %d\n", temp->yazarAd, temp->yazarSoyad, temp->yazarID);
+	    }
+	    while(kyazarlar[i].YazarID != -2){
+	        if(kyazarlar[i].YazarID == temp->yazarID){
+	        	KITAP* (*isbnbul)(KITAP*,char[30]) = &isbnilebul;
+    	        KITAP* kitap = kitapbultekbilgi(&khead,kyazarlar[i].ISBN,isbnbul);
+	            printf("Kitap Adi = %s\nKitap ISBN = %s\n", kitap->kitapAdi, kitap->ISBN);
+	        }
+	        i++;
+	    }
+	}
 }
+    
 void ogrencigoruntule(OGRENCI** headptr,KODUNCLISTE** koduncheadptr){
-    char ogrID[8];
-    printf("Ogrenci ID: ");
-    scanf("%s",ogrID);
-    OGRENCI *temp = ogrencibul(headptr,ogrID);
-    if(temp != NULL){
-        printf("Ogrenci Adi = %s\nOgrenci Soyadi = %s\nOgrenci Id = %s\nOgrenci Puani = %d\n", temp->ad, temp->soyad, temp->ogrID, temp->puan);
-        KODUNCLISTE *ktemp = *koduncheadptr;
-        while(ktemp != NULL){
-            if(strcmp(ktemp->odunc->ogrID,ogrID)==0){
-                printf("Kitap Etiket Numarasi = %s\nIslem Tipi = %d\nIslem Tarihi= %d.%d.%d\n", ktemp->odunc->EtiketNo, ktemp->odunc->islemTipi & 0b00000001,ktemp->odunc->islemTarihi.gun & 0b00011111,ktemp->odunc->islemTarihi.ay & 0b00001111,ktemp->odunc->islemTarihi.yil);
-            }
-            ktemp = ktemp->next;
-        }
-    }
-    else{
-        printf("Ogrenci Bulunamadi\n");
-    }
+	int secim;
+	printf("Ogrenci ID ile bulmak icin 1 yaziniz\nAd soyad ile bulmak icin 2 yaziniz\n");
+	scanf("%d",&secim);
+	system("cls");
+	if(secim==1){
+	    char ogrID[8];
+	    printf("Ogrenci ID: ");
+	    scanf("%s",ogrID);
+	    OGRENCI *temp = ogrencibul(headptr,ogrID);
+	    if(temp != NULL){
+	        printf("Ogrenci Adi = %s\nOgrenci Soyadi = %s\nOgrenci Id = %s\nOgrenci Puani = %d\n", temp->ad, temp->soyad, temp->ogrID, temp->puan);
+	        KODUNCLISTE *ktemp = *koduncheadptr;
+	        while(ktemp != NULL){
+	            if(strcmp(ktemp->odunc->ogrID,ogrID)==0){
+	                printf("Kitap Etiket Numarasi = %s\nIslem Tipi = %d\nIslem Tarihi= %d.%d.%d\n", ktemp->odunc->EtiketNo, ktemp->odunc->islemTipi & 0b00000001,ktemp->odunc->islemTarihi.gun & 0b00011111,ktemp->odunc->islemTarihi.ay & 0b00001111,ktemp->odunc->islemTarihi.yil);
+	            }
+	            ktemp = ktemp->next;
+	        }
+	    }
+	    else{
+	        printf("Ogrenci Bulunamadi\n");
+	    }
+	}
+	else{
+		char ad[30],soyad[30];
+		printf("Ogrenci adi: ");
+		fflush(stdin);
+	    scanf("%s",ad);
+	    fflush(stdin);
+	    printf("Ogrenci soyadi: ");
+	    fflush(stdin);
+	    scanf("%s",soyad);
+	    fflush(stdin);
+	    OGRENCI *temp = ogrencibulisimle(headptr,ad,soyad);
+	    if(temp != NULL){
+	        printf("Ogrenci Adi = %s\nOgrenci Soyadi = %s\nOgrenci Id = %s\nOgrenci Puani = %d\n", temp->ad, temp->soyad, temp->ogrID, temp->puan);
+	        KODUNCLISTE *ktemp = *koduncheadptr;
+	        while(ktemp != NULL){
+	            if(strcmp(ktemp->odunc->ogrID,temp->ogrID)==0){
+	                printf("Kitap Etiket Numarasi = %s\nIslem Tipi = %d\nIslem Tarihi= %d.%d.%d\n", ktemp->odunc->EtiketNo, ktemp->odunc->islemTipi & 0b00000001,ktemp->odunc->islemTarihi.gun & 0b00011111,ktemp->odunc->islemTarihi.ay & 0b00001111,ktemp->odunc->islemTarihi.yil);
+	            }
+	            ktemp = ktemp->next;
+	        }
+	    }
+	    else{
+	        printf("Ogrenci Bulunamadi\n");
+	    }
+	}
 }
 
+void gecmeyeri(){
+	int sayi;
+    printf("Gecmek icin bir sayi giriniz\n");
+    scanf("%d",&sayi);
+    system("cls");
+}
 void mainMenu(YAZAR *yazarhead,OGRENCI *ohead,KITAP *khead,KYAZAR kyazarlar[],KODUNCLISTE *kodunchead){
     int secim;
     while(1) {
         printf("1- Ogrenci Islemleri\n2- Kitap Islemleri\n3- Yazar Islemleri\n4- Cikis\n");
         scanf("%d", &secim);
+        system("cls");
         switch (secim) {
             case 1:
                 printf("1- Ogrenci Ekle,Sil,Guncelle\n2- Ogrenci Bilgisi Goruntuleme\n3- Kitap teslim etmeyen ogrencileri listele\n4- Cezali Ogrenci listele\n5- Tum Ogrencileri listele\n6- Kitap Odunc Al/Teslim Et\n7- Ana Menu\n");
                 scanf("%d", &secim);
+                system("cls");
                 switch (secim) {
                     case 1:
                         printf("1- Ogrenci Ekle\n2- Ogrenci Sil\n3- Ogrenci Güncelle\n4- Ana Menu\n");
                         scanf("%d", &secim);
+                        system("cls");
                         switch (secim) {
                             case 1:
                                 ogrenciekle(&ohead);
+                                gecmeyeri();
                                 break;
                             case 2:
                                 ogrencisil(&ohead);
+                                gecmeyeri();
                                 break;
                             case 3:
                                 ogrenciGuncelle(&ohead);
+                                gecmeyeri();
                                 break;
                             case 4:
                                 break;
@@ -1046,25 +1259,32 @@ void mainMenu(YAZAR *yazarhead,OGRENCI *ohead,KITAP *khead,KYAZAR kyazarlar[],KO
                         break;
                     case 2:
                         ogrencigoruntule(&ohead,&kodunchead);
+                        gecmeyeri();
                         break;
                     case 3:
                         kitapteslimetmeyenler(&kodunchead,ohead);
+                        gecmeyeri();
                         break;
                     case 4:
                         cezaliogrencilistele(&ohead);
+                        gecmeyeri();
                         break;
                     case 5:
                         ogrencileryazdir(ohead);
+                        gecmeyeri();
                         break;
                     case 6:
                         printf("1- Kitap Odunc Al\n2- Kitap Teslim Et\n3- Ana Menu\n");
                         scanf("%d", &secim);
+                        system("cls");
                         switch (secim) {
                             case 1:
                                 oduncal(ohead, khead, &kodunchead);
+                                gecmeyeri();
                                 break;
                             case 2:
                                 oduncver(ohead, khead, &kodunchead);
+                                gecmeyeri();
                                 break;
                             case 3:
                                 break;
@@ -1085,19 +1305,24 @@ void mainMenu(YAZAR *yazarhead,OGRENCI *ohead,KITAP *khead,KYAZAR kyazarlar[],KO
             case 2:
                 printf("1- Kitap Ekle, Sil, Güncelle\n2- Kitap Bilgisi Görüntüleme:\n3- Raftaki Kitapları Listele\n4- Zamanında Teslim Edilmeyen Kitapları Listele\n5- Kitap-Yazar Eşleştir\n6- Kitabın Yazarını Güncelle\n7- Ana Menu\n");
                 scanf("%d", &secim);
+                system("cls");
                 switch (secim) {
                     case 1:
                         printf("1- Kitap Ekle\n2- Kitap Sil\n3- Kitap Güncelle\n4- Ana Menu\n");
                         scanf("%d", &secim);
+                        system("cls");
                         switch (secim) {
                             case 1:
                                 kitapekle(&khead);
+                                gecmeyeri();
                                 break;
                             case 2:
                                 kitapsil(&khead);
+                                gecmeyeri();
                                 break;
                             case 3:
                                 kitapGuncelle(&khead);
+                                gecmeyeri();
                                 break;
                             case 4:
                                 break;
@@ -1108,18 +1333,23 @@ void mainMenu(YAZAR *yazarhead,OGRENCI *ohead,KITAP *khead,KYAZAR kyazarlar[],KO
                         break;
                     case 2:
                         kitapgoruntule(&khead);
+                        gecmeyeri();
                         break;
                     case 3:
                         raftakiKitaplar(&kodunchead,khead);
+                        gecmeyeri();
                         break;
                     case 4:
                         teslimedilmeyenkitaplar(&kodunchead);
+                        gecmeyeri();
                         break;
                     case 5:
                         kitapyazareslestir(&yazarhead,&khead,kyazarlar);
+                        gecmeyeri();
                         break;
                     case 6:
                         kyazarguncelle(&yazarhead,&khead,kyazarlar);
+                        gecmeyeri();
                         break;
                     case 7:
                         break;
@@ -1131,19 +1361,24 @@ void mainMenu(YAZAR *yazarhead,OGRENCI *ohead,KITAP *khead,KYAZAR kyazarlar[],KO
             case 3:
                 printf("1- Yazar Ekle, Sil, Güncelle\n2- Yazar Bilgisi Görüntüleme\n3- Ana Menu\n");
                 scanf("%d", &secim);
+                system("cls");
                 switch (secim) {
                     case 1:
                         printf("1- Yazar Ekle\n2- Yazar Sil\n3- Yazar Güncelle\n4- Ana Menu\n");
                         scanf("%d", &secim);
+                        system("cls");
                         switch (secim) {
                             case 1:
                                 yazarekle(&yazarhead);
+                                gecmeyeri();
                                 break;
                             case 2:
                                 yazarsil(&yazarhead,kyazarlar);
+                                gecmeyeri();
                                 break;
                             case 3:
                                 yazarGuncelle(&yazarhead);
+                                gecmeyeri();
                                 break;
                             case 4:
                                 break;
@@ -1154,6 +1389,7 @@ void mainMenu(YAZAR *yazarhead,OGRENCI *ohead,KITAP *khead,KYAZAR kyazarlar[],KO
                         break;
                     case 2:
                         yazarGoruntule(yazarhead,khead,kyazarlar);
+                        gecmeyeri();
                         break;
                     case 3:
                         break;
@@ -1176,9 +1412,10 @@ int main() {
     OGRENCI *ohead = (OGRENCI*)malloc(sizeof(OGRENCI));
     strcpy(ohead->ad, "Created for prev");
     strcpy(ohead->soyad, "Not a student");
+    ohead->next = NULL;
     KITAP *khead = NULL;
-    KYAZAR kyazarlar[1000];
-    kyazarlar[0].YazarID = -1;
+    KYAZAR *kyazarlar = (KYAZAR*)malloc(sizeof(KYAZAR));
+    kyazarlar[0].YazarID = -2;
     KODUNCLISTE *kodunchead = NULL;
 
     saveoduncleroku(&kodunchead);
